@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-wow-gold: #ffd700;
+  --color-wow-dark: #0d0d1a;
+  --color-wow-panel: #1a1a2e;
+  --color-wow-border: #2a2a4a;
+  --color-wow-text: #e0e0e0;
+  --color-wow-muted: #8888aa;
+  --color-wow-accent: #c79c6e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-wow-dark);
+  color: var(--color-wow-text);
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-wow-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-wow-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-wow-muted);
+}
+
+/* Konva canvas cursor overrides */
+canvas {
+  cursor: default;
+}
