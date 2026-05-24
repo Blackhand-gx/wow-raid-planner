@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WOW 团队副本规划器 — 基于 React + Konva 画布的魔兽世界战术布阵工具。支持上传副本地图作为背景，在上面放置团员、首领标记和绘制战术标注。
 
+**GitHub**: https://github.com/Blackhand-gx/wow-raid-planner
+
 ## 常用命令
 
 ```bash
@@ -15,6 +17,7 @@ npm run dev          # 启动开发服务器（默认 http://localhost:5173）
 npm run build        # 类型检查 + 生产构建
 npx vite build       # 仅构建，跳过 tsc（存在预存未使用变量告警时使用）
 npm run lint         # ESLint 检查
+git push origin main # 推送至 GitHub
 ```
 
 构建产物输出到 `dist/`。
