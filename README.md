@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# 魔兽世界 团队副本规划器
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+基于 React + Konva 画布的团队副本战术布阵工具。支持副本地图叠加、团员拖拽部署、首领标记、战术标注（箭头/直线/圆形/文字），适用于开荒阶段的战术制定与复盘。
 
-Currently, two official plugins are available:
+## 功能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **战术画布** — Konva 无限画布，支持平移、缩放、框选批量操作
+- **副本地图** — 上传自定义地图作为背景，支持透明度调节和独立缩放
+- **团员管理** — 拖拽放置团员标记，支持职业、职责（坦克/治疗/输出）、团队标记
+- **首领标记** — 预设 9 个首领（虚影尖塔 / 梦境裂隙 / 进军奎尔丹纳斯），一键切换
+- **战术绘图** — 箭头、直线、圆形、文字标注，分层管理
+- **截图导入** — 上传团队截图，半透明叠加辅助手动部署；支持 OCR 自动识别姓名和职业
+- **撤销/重做** — 最多 50 步历史，自动保存至本地
+- **导出** — 一键导出 PNG 图片或 JSON 存档文件
 
-## React Compiler
+## 技术栈
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| 类别 | 技术 |
+|------|------|
+| 框架 | React 19 + TypeScript |
+| 画布 | Konva + react-konva |
+| 状态管理 | Zustand |
+| 样式 | Tailwind CSS 4 |
+| OCR | tesseract.js |
+| 构建 | Vite |
 
-## Expanding the ESLint configuration
+## 快速开始
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# 安装依赖
+npm install
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# 启动开发服务器
+npm run dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 生产构建
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 使用说明
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. 在工具栏选择工具（选择/平移/箭头/直线/圆形/文字/标记/橡皮擦）
+2. 通过左侧面板管理团员、首领、地图和标注
+3. 拖拽画布上的图标调整位置
+4. 双击团员编辑详细信息
+5. 使用 Ctrl+Z / Ctrl+Y 撤销和重做
+6. 完成后导出 PNG 或 JSON 存档
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 目录结构
+
 ```
+src/
+├── components/          # React 组件
+│   ├── canvas/          # 画布层级（背景/团员/首领/标注）
+│   ├── dialogs/         # 弹窗（编辑/自动识别）
+│   ├── layout/          # 布局（工具栏/侧栏/状态栏）
+│   ├── nodes/           # 画布节点（团员/首领图标）
+│   ├── panels/          # 侧栏面板
+│   └── shared/          # 共享组件
+├── data/                # 静态数据（职业/首领预设）
+├── hooks/               # 自定义 Hook
+├── store/               # Zustand 状态（按功能域切片）
+├── types/               # TypeScript 类型定义
+├── utils/               # 工具函数（序列化/导出/OCR）
+└── styles/              # 全局样式
+```
+
+## License
+
+MIT
