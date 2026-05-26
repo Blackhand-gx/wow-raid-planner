@@ -1,13 +1,33 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, Component } from 'react';
 import { Stage, Layer, Rect, Arrow, Line as KonvaLine, Ellipse } from 'react-konva';
 import Konva from 'konva';
+
+class ErrBnd extends Component<{ children: React.ReactNode }, { err: Error | null }> {
+  state: { err: Error | null } = { err: null };
+  static getDerivedStateFromError(err: Error) { return { err }; }
+  render() {
+    if (this.state.err) {
+      return (
+        <div style={{
+          position: 'absolute', inset: 0, background: '#1a0000', color: '#ff4444',
+          zIndex: 99999, padding: 20, fontFamily: 'monospace', fontSize: 13,
+          whiteSpace: 'pre-wrap', overflow: 'auto', border: '2px solid red',
+        }}>
+          <strong>FloatingLayerBar Error:</strong>{'\n'}
+          {this.state.err.message}{'\n\n'}
+          {this.state.err.stack}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { useAppStore } from '../../store';
 import { useCanvasZoom } from '../../hooks/useCanvasZoom';
 import { useCanvasPan } from '../../hooks/useCanvasPan';
 import { BackgroundLayer } from './BackgroundLayer';
-import { PlayerLayer } from './PlayerLayer';
-import { BossLayer } from './BossLayer';
-import { AnnotationBackLayer, AnnotationFrontLayer } from './AnnotationLayer';
+import { UnifiedEntityLayer } from './UnifiedEntityLayer';
+import { FloatingLayerBar } from './FloatingLayerBar';
 import { SelectionLayer } from './SelectionLayer';
 import { ScreenshotLayer } from './ScreenshotLayer';
 import { useDrawAnnotation } from '../../hooks/useDrawAnnotation';
@@ -231,13 +251,11 @@ export function RaidCanvas() {
         </Layer>
         <ScreenshotLayer />
         <BackgroundLayer />
-        <BossLayer />
-        <AnnotationBackLayer />
-        <PlayerLayer />
-        <AnnotationFrontLayer />
+        <UnifiedEntityLayer />
         {drawingPreview && <DrawingPreviewLayer preview={drawingPreview} />}
         <SelectionLayer selectRect={selectRect} />
       </Stage>
+      <ErrBnd><FloatingLayerBar /></ErrBnd>
     </div>
   );
 }

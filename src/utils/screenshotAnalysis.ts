@@ -195,17 +195,20 @@ function sampleColumnColor(
 
 function processName(raw: string): string {
   let name = raw.trim();
-  // 去掉首尾非文字/字母/数字/分隔符
-  name = name.replace(/^[^a-zA-Z一-鿿㐀-䶿0-9\-·•｜|—–]+/, '');
-  name = name.replace(/[^a-zA-Z一-鿿㐀-䶿0-9\-·•｜|—–]+$/, '');
-  // 按分隔符拆分（- · • 丨 | — – 和它们的中文 OCR 误识别变体），取第一段
-  const sepIdx = name.search(/[-·•｜|—–一—丨lI1]/);
+  // 移除 OCR 常见噪声：竖线及其全角/笔画变体
+  name = name.replace(/[|｜丨]/g, '');
+  // 去掉首尾非文字/字母/数字/分隔符（竖线已在上一步移除，不再列入保留集）
+  name = name.replace(/^[^a-zA-Z一-鿿㐀-䶿0-9\-·•—–]+/, '');
+  name = name.replace(/[^a-zA-Z一-鿿㐀-䶿0-9\-·•—–]+$/, '');
+  // 按分隔符拆分，取第一段（Name-Server 格式）
+  // 包含：- · • — – 及其 OCR 误识别变体（丨 l I 1 一 — / \）
+  const sepIdx = name.search(/[-·•—–丨一—/\\lI1]/);
   if (sepIdx > 0) name = name.substring(0, sepIdx);
-  // 纯中文且过长（>7字），大概率是 OCR 把服务器名拼进去了，截断
-  if (/^[一-鿿]{8,}$/.test(name)) name = name.substring(0, 6);
+  // 纯中文且过长（>6字），大概率 OCR 把服务器名拼进去了，截断到合理长度
+  if (/^[一-鿿]{7,}$/.test(name)) name = name.substring(0, 6);
   // 去括号内容
   name = name.replace(/[（(][^)）]*[)）]/g, '').trim();
-  return name || raw.trim();
+  return name || raw.trim().replace(/[|｜丨]/g, '');
 }
 
 function cropAndEnhanceRow(
@@ -365,7 +368,7 @@ export async function analyzeScreenshot(
 
         const validWords = words.filter((w) => {
           const t = w.text.trim();
-          return t.length <= 30 && (t.length >= 2 || /[一-鿿\-·•｜|]/.test(t));
+          return t.length <= 30 && (t.length >= 2 || /[一-鿿\-·•]/.test(t));
         });
         const rawName = validWords.map((w) => w.text).join('');
         const name = processName(rawName);

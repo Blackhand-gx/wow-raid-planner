@@ -1,6 +1,6 @@
 import { useAppStore } from '../../store';
 import { ANNOTATION_COLORS } from '../../utils/constants';
-import { Trash2, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Annotation } from '../../types';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -19,6 +19,8 @@ export function AnnotationPanel() {
   const setSelectedIds = useAppStore((s) => s.setSelectedIds);
   const updateAnnotation = useAppStore((s) => s.updateAnnotation);
   const removeAnnotation = useAppStore((s) => s.removeAnnotation);
+  const moveAnnotationUp = useAppStore((s) => s.moveAnnotationUp);
+  const moveAnnotationDown = useAppStore((s) => s.moveAnnotationDown);
   const markerSize = useAppStore((s) => s.markerSize);
   const setMarkerSize = useAppStore((s) => s.setMarkerSize);
 
@@ -70,6 +72,32 @@ export function AnnotationPanel() {
                 <span style={{ color: 'var(--color-wow-text)', minWidth: 28 }}>
                   {TYPE_LABEL[a.type] ?? a.type}
                 </span>
+
+                {/* Up/down */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveAnnotationUp(a.id); }}
+                  title="上移一层"
+                  disabled={annotations.indexOf(a) === annotations.length - 1}
+                  style={{
+                    border: 'none', background: 'transparent',
+                    color: annotations.indexOf(a) === annotations.length - 1 ? 'var(--color-wow-border)' : 'var(--color-wow-muted)',
+                    cursor: annotations.indexOf(a) === annotations.length - 1 ? 'default' : 'pointer', padding: 0,
+                  }}
+                >
+                  <ChevronUp size={13} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveAnnotationDown(a.id); }}
+                  title="下移一层"
+                  disabled={annotations.indexOf(a) === 0}
+                  style={{
+                    border: 'none', background: 'transparent',
+                    color: annotations.indexOf(a) === 0 ? 'var(--color-wow-border)' : 'var(--color-wow-muted)',
+                    cursor: annotations.indexOf(a) === 0 ? 'default' : 'pointer', padding: 0,
+                  }}
+                >
+                  <ChevronDown size={13} />
+                </button>
 
                 {/* Layer */}
                 <button

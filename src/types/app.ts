@@ -14,4 +14,5 @@ export interface ProjectFile {
   activeMapId: string | null;
   annotations: Annotation[];
   viewport: ViewportState;
+  renderOrder?: string[];
 }

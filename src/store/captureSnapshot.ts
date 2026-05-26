@@ -7,5 +7,6 @@ export function captureSnapshot(get: () => AppStore) {
     bosses: JSON.stringify(state.bosses),
     annotations: JSON.stringify(state.annotations),
     viewport: JSON.stringify(state.viewport),
+    renderOrder: JSON.stringify(state.renderOrder),
   });
 }

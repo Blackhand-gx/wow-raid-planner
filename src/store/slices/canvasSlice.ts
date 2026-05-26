@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ToolType, ViewportState } from '../../types';
 import { DEFAULT_VIEWPORT, MIN_SCALE, MAX_SCALE } from '../../utils/constants';
+import { captureSnapshot } from '../captureSnapshot';
 
 export interface SelectRect {
   x: number;
@@ -24,6 +25,7 @@ export interface CanvasSlice {
   sidebarTab: string;
   stageWidth: number;
   stageHeight: number;
+  renderOrder: string[];
 
   setViewport: (vp: Partial<ViewportState>) => void;
   zoomToFit: (stageW: number, stageH: number, mapW: number, mapH: number) => void;
@@ -43,9 +45,14 @@ export interface CanvasSlice {
   setMarkerSize: (size: number) => void;
   setMarkerType: (type: string) => void;
   setStageSize: (w: number, h: number) => void;
+  setRenderOrder: (order: string[]) => void;
+  moveInRenderOrder: (id: string, direction: 'up' | 'down') => void;
+  moveToRenderPosition: (id: string, targetIndex: number) => void;
+  addToRenderOrder: (id: string) => void;
+  removeFromRenderOrder: (id: string) => void;
 }
 
-export const createCanvasSlice: StateCreator<CanvasSlice> = (set, _get) => ({
+export const createCanvasSlice: StateCreator<CanvasSlice> = (set, get) => ({
   viewport: { ...DEFAULT_VIEWPORT },
   activeTool: 'select',
   selectedIds: [],
@@ -60,6 +67,7 @@ export const createCanvasSlice: StateCreator<CanvasSlice> = (set, _get) => ({
   sidebarTab: 'players',
   stageWidth: 800,
   stageHeight: 600,
+  renderOrder: [],
 
   setViewport: (vp) => set((s) => {
     const next = { ...s.viewport, ...vp };
@@ -104,4 +112,37 @@ export const createCanvasSlice: StateCreator<CanvasSlice> = (set, _get) => ({
   setMarkerType: (markerType) => set({ markerType }),
 
   setStageSize: (w, h) => set({ stageWidth: Math.floor(w), stageHeight: Math.floor(h) }),
+
+  setRenderOrder: (renderOrder) => set({ renderOrder }),
+
+  moveInRenderOrder: (id, direction) => set((s) => {
+    const idx = s.renderOrder.indexOf(id);
+    if (idx === -1) return s;
+    if (direction === 'up' && idx >= s.renderOrder.length - 1) return s;
+    if (direction === 'down' && idx <= 0) return s;
+    const next = [...s.renderOrder];
+    const target = direction === 'up' ? idx + 1 : idx - 1;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    return { renderOrder: next };
+  }),
+
+  moveToRenderPosition: (id, targetIndex) => {
+    captureSnapshot(get);
+    set((s) => {
+      const idx = s.renderOrder.indexOf(id);
+      if (idx === -1 || idx === targetIndex) return s;
+      const next = [...s.renderOrder];
+      next.splice(idx, 1);
+      next.splice(targetIndex, 0, id);
+      return { renderOrder: next };
+    });
+  },
+
+  addToRenderOrder: (id) => set((s) => ({
+    renderOrder: [...s.renderOrder, id],
+  })),
+
+  removeFromRenderOrder: (id) => set((s) => ({
+    renderOrder: s.renderOrder.filter((rid) => rid !== id),
+  })),
 });

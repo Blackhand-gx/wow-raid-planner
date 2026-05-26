@@ -3,7 +3,7 @@ import { useAppStore } from '../../store';
 import { ClassPicker } from '../shared/ClassPicker';
 import type { WoWClass } from '../../types';
 import { getClassDef } from '../../data/classes';
-import { Trash2, Plus, Sparkles, X } from 'lucide-react';
+import { Trash2, Plus, Sparkles, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useImageUpload } from '../../hooks/useImageUpload';
 import { getCanvasCenter } from '../../utils/canvasCenter';
 import { analyzeScreenshot } from '../../utils/screenshotAnalysis';
@@ -17,6 +17,8 @@ export function PlayerPanel() {
   const removePlayer = useAppStore((s) => s.removePlayer);
   const playerIconSize = useAppStore((s) => s.playerIconSize);
   const updatePlayerName = useAppStore((s) => s.updatePlayerName);
+  const movePlayerUp = useAppStore((s) => s.movePlayerUp);
+  const movePlayerDown = useAppStore((s) => s.movePlayerDown);
   const setPlayerIconSize = useAppStore((s) => s.setPlayerIconSize);
   const setViewport = useAppStore((s) => s.setViewport);
   const { uploadFile, openFileDialog } = useImageUpload();
@@ -35,7 +37,7 @@ export function PlayerPanel() {
   const handleAdd = () => {
     if (!name.trim()) return;
     const { x: cx, y: cy } = getCanvasCenter();
-    addPlayer(name.trim(), className, cx + players.length * 30, cy + players.length * 30);
+    addPlayer(name.trim(), className, cx + (Math.random() - 0.5) * 200, cy + (Math.random() - 0.5) * 200);
     setName('');
   };
 
@@ -242,6 +244,30 @@ export function PlayerPanel() {
                 <span style={{ fontSize: 10, color: 'var(--color-wow-muted)' }}>
                   ({Math.round(p.x)}, {Math.round(p.y)})
                 </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); movePlayerUp(p.id); }}
+                  title="上移一层"
+                  disabled={players.indexOf(p) === players.length - 1}
+                  style={{
+                    border: 'none', background: 'transparent',
+                    color: players.indexOf(p) === players.length - 1 ? 'var(--color-wow-border)' : 'var(--color-wow-muted)',
+                    cursor: players.indexOf(p) === players.length - 1 ? 'default' : 'pointer', padding: 0,
+                  }}
+                >
+                  <ChevronUp size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); movePlayerDown(p.id); }}
+                  title="下移一层"
+                  disabled={players.indexOf(p) === 0}
+                  style={{
+                    border: 'none', background: 'transparent',
+                    color: players.indexOf(p) === 0 ? 'var(--color-wow-border)' : 'var(--color-wow-muted)',
+                    cursor: players.indexOf(p) === 0 ? 'default' : 'pointer', padding: 0,
+                  }}
+                >
+                  <ChevronDown size={14} />
+                </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); removePlayer(p.id); }}
                   style={{

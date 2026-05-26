@@ -13,7 +13,6 @@ export const PlayerNode = memo(function PlayerNode({ player }: PlayerNodeProps) 
   const iconSize = useAppStore((s) => s.playerIconSize);
   const selectedIds = useAppStore((s) => s.selectedIds);
   const activeTool = useAppStore((s) => s.activeTool);
-  const updatePosition = useAppStore((s) => s.updatePlayerPosition);
   const setSelectedIds = useAppStore((s) => s.setSelectedIds);
   const toggleSelection = useAppStore((s) => s.toggleSelection);
 
@@ -28,6 +27,7 @@ export const PlayerNode = memo(function PlayerNode({ player }: PlayerNodeProps) 
   const isDragging = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const nodeStartPos = useRef({ x: 0, y: 0 });
+  const stageRef = useRef<any>(null);
 
   useEffect(() => {
     const img = new window.Image();
@@ -69,6 +69,7 @@ export const PlayerNode = memo(function PlayerNode({ player }: PlayerNodeProps) 
     const pos = transform.point(pointer);
 
     isDragging.current = true;
+    stageRef.current = stage;
     dragStartPos.current = { x: pos.x, y: pos.y };
     nodeStartPos.current = { x: player.x, y: player.y };
 
@@ -79,6 +80,7 @@ export const PlayerNode = memo(function PlayerNode({ player }: PlayerNodeProps) 
       bosses: JSON.stringify(s.bosses),
       annotations: JSON.stringify(s.annotations),
       viewport: JSON.stringify(s.viewport),
+      renderOrder: JSON.stringify(s.renderOrder),
     });
 
     // Select on mousedown: shift=toggle, otherwise select only this player
@@ -87,37 +89,44 @@ export const PlayerNode = memo(function PlayerNode({ player }: PlayerNodeProps) 
     } else if (!isSelected) {
       setSelectedIds([player.id]);
     }
+
+    // Window-level listeners to keep dragging even when cursor is over other elements
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      ev.preventDefault();
+
+      const stg = stageRef.current;
+      if (!stg) return;
+
+      const p = stg.getPointerPosition();
+      if (!p) return;
+
+      const t = stg.getAbsoluteTransform().copy().invert();
+      const canvasPos = t.point(p);
+
+      const dx = canvasPos.x - dragStartPos.current.x;
+      const dy = canvasPos.y - dragStartPos.current.y;
+
+      const store = useAppStore.getState();
+      const currentSelected = store.selectedIds;
+
+      if (currentSelected.includes(player.id) && currentSelected.length > 1) {
+        store.bulkUpdatePositions(currentSelected.map(id => ({ id, dx, dy })));
+        dragStartPos.current = { x: canvasPos.x, y: canvasPos.y };
+      } else {
+        store.updatePlayerPosition(player.id, nodeStartPos.current.x + dx, nodeStartPos.current.y + dy);
+      }
+    };
+
+    const onUp = () => {
+      isDragging.current = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   }, [activeTool, player.id, player.x, player.y, isSelected, toggleSelection, setSelectedIds]);
-
-  const handleMouseMove = useCallback((e: any) => {
-    if (!isDragging.current) return;
-    e.evt.preventDefault();
-
-    const stage = e.target.getStage();
-    const pointer = stage?.getPointerPosition();
-    if (!pointer) return;
-
-    const transform = stage.getAbsoluteTransform().copy().invert();
-    const pos = transform.point(pointer);
-
-    const dx = pos.x - dragStartPos.current.x;
-    const dy = pos.y - dragStartPos.current.y;
-
-    const store = useAppStore.getState();
-    const currentSelected = store.selectedIds;
-
-    if (currentSelected.includes(player.id) && currentSelected.length > 1) {
-      store.bulkUpdatePositions(currentSelected.map(id => ({ id, dx, dy })));
-      dragStartPos.current = { x: pos.x, y: pos.y };
-    } else {
-      updatePosition(player.id, nodeStartPos.current.x + dx, nodeStartPos.current.y + dy);
-    }
-  }, [player.id, updatePosition]);
-
-  const handleMouseUp = useCallback(() => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-  }, []);
 
   const handleDblClick = () => {
     window.dispatchEvent(new CustomEvent('edit-player', { detail: player.id }));
@@ -151,9 +160,6 @@ export const PlayerNode = memo(function PlayerNode({ player }: PlayerNodeProps) 
       x={player.x}
       y={player.y}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       onTap={handleMouseDown}
       onDblClick={handleDblClick}
       onDblTap={handleDblClick}

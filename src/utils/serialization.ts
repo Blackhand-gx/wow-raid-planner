@@ -13,6 +13,7 @@ export function serializeState(store: AppStore): string {
     activeMapId: s.activeMapId ?? null,
     annotations: s.annotations ?? [],
     viewport: s.viewport ?? { x: 0, y: 0, scale: 1 },
+    renderOrder: s.renderOrder ?? [],
   };
   return JSON.stringify(doc, null, 2);
 }
@@ -24,6 +25,7 @@ export function deserializeState(json: string): Partial<{
   activeMapId: ProjectFile['activeMapId'];
   annotations: ProjectFile['annotations'];
   viewport: ProjectFile['viewport'];
+  renderOrder: ProjectFile['renderOrder'];
 }> | null {
   try {
     const doc: ProjectFile = JSON.parse(json);
@@ -35,6 +37,7 @@ export function deserializeState(json: string): Partial<{
       activeMapId: doc.activeMapId,
       annotations: doc.annotations ?? [],
       viewport: doc.viewport ?? { x: 0, y: 0, scale: 1 },
+      renderOrder: doc.renderOrder ?? [],
     };
   } catch {
     return null;
@@ -48,6 +51,7 @@ export function takeSnapshot(store: AppStore): string {
     bosses: s.bosses?.map((b: any) => ({ ...b, imageDataUrl: b.imageDataUrl ? '[IMG_REF]' : null })) ?? [],
     annotations: s.annotations ?? [],
     viewport: s.viewport ?? { x: 0, y: 0, scale: 1 },
+    renderOrder: s.renderOrder ?? [],
   });
 }
 

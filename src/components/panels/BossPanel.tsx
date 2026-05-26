@@ -4,7 +4,7 @@ import { useImageUpload } from '../../hooks/useImageUpload';
 import { loadDefaultMap } from '../../utils/defaultMap';
 import { getCanvasCenter } from '../../utils/canvasCenter';
 import { cropToCircle } from '../../utils/imageResize';
-import { Trash2, Lock, Unlock, Upload, Plus } from 'lucide-react';
+import { Trash2, Lock, Unlock, Upload, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { BossPresetSelect } from '../shared/BossPresetSelect';
 
 export function BossPanel() {
@@ -13,6 +13,8 @@ export function BossPanel() {
   const removeBoss = useAppStore((s) => s.removeBoss);
   const toggleBossFixed = useAppStore((s) => s.toggleBossFixed);
   const updateBossName = useAppStore((s) => s.updateBossName);
+  const moveBossUp = useAppStore((s) => s.moveBossUp);
+  const moveBossDown = useAppStore((s) => s.moveBossDown);
   const bossIconSize = useAppStore((s) => s.bossIconSize);
   const setBossIconSize = useAppStore((s) => s.setBossIconSize);
   const setViewport = useAppStore((s) => s.setViewport);
@@ -176,6 +178,30 @@ export function BossPanel() {
                 color: '#ff6666', fontSize: 12, outline: 'none',
               }}
             />
+            <button
+              onClick={(e) => { e.stopPropagation(); moveBossUp(boss.id); }}
+              title="上移一层"
+              disabled={bosses.indexOf(boss) === bosses.length - 1}
+              style={{
+                border: 'none', background: 'transparent',
+                color: bosses.indexOf(boss) === bosses.length - 1 ? 'var(--color-wow-border)' : 'var(--color-wow-muted)',
+                cursor: bosses.indexOf(boss) === bosses.length - 1 ? 'default' : 'pointer', padding: 0,
+              }}
+            >
+              <ChevronUp size={14} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); moveBossDown(boss.id); }}
+              title="下移一层"
+              disabled={bosses.indexOf(boss) === 0}
+              style={{
+                border: 'none', background: 'transparent',
+                color: bosses.indexOf(boss) === 0 ? 'var(--color-wow-border)' : 'var(--color-wow-muted)',
+                cursor: bosses.indexOf(boss) === 0 ? 'default' : 'pointer', padding: 0,
+              }}
+            >
+              <ChevronDown size={14} />
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); toggleBossFixed(boss.id); }}
               title={boss.fixed ? '解锁' : '锁定'}

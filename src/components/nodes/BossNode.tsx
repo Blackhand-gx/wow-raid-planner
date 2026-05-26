@@ -11,7 +11,6 @@ export const BossNode = memo(function BossNode({ boss }: BossNodeProps) {
   const iconSize = useAppStore((s) => s.bossIconSize);
   const selectedIds = useAppStore((s) => s.selectedIds);
   const activeTool = useAppStore((s) => s.activeTool);
-  const updatePosition = useAppStore((s) => s.updateBossPosition);
   const setSelectedIds = useAppStore((s) => s.setSelectedIds);
   const toggleSelection = useAppStore((s) => s.toggleSelection);
 
@@ -22,6 +21,7 @@ export const BossNode = memo(function BossNode({ boss }: BossNodeProps) {
   const isDragging = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const nodeStartPos = useRef({ x: 0, y: 0 });
+  const stageRef = useRef<any>(null);
 
   useEffect(() => {
     if (!boss.imageDataUrl) {
@@ -55,6 +55,7 @@ export const BossNode = memo(function BossNode({ boss }: BossNodeProps) {
     const pos = transform.point(pointer);
 
     isDragging.current = true;
+    stageRef.current = stage;
     dragStartPos.current = { x: pos.x, y: pos.y };
     nodeStartPos.current = { x: boss.x, y: boss.y };
 
@@ -65,38 +66,45 @@ export const BossNode = memo(function BossNode({ boss }: BossNodeProps) {
       bosses: JSON.stringify(s.bosses),
       annotations: JSON.stringify(s.annotations),
       viewport: JSON.stringify(s.viewport),
+      renderOrder: JSON.stringify(s.renderOrder),
     });
+
+    // Window-level listeners to keep dragging even when cursor is over other elements
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current || boss.fixed) return;
+      ev.preventDefault();
+
+      const stg = stageRef.current;
+      if (!stg) return;
+
+      const p = stg.getPointerPosition();
+      if (!p) return;
+
+      const t = stg.getAbsoluteTransform().copy().invert();
+      const canvasPos = t.point(p);
+
+      const dx = canvasPos.x - dragStartPos.current.x;
+      const dy = canvasPos.y - dragStartPos.current.y;
+
+      const store = useAppStore.getState();
+      store.updateBossPosition(boss.id, nodeStartPos.current.x + dx, nodeStartPos.current.y + dy);
+    };
+
+    const onUp = () => {
+      isDragging.current = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   }, [activeTool, boss.id, boss.x, boss.y, boss.fixed, isSelected, toggleSelection, setSelectedIds]);
-
-  const handleMouseMove = useCallback((e: any) => {
-    if (!isDragging.current || boss.fixed) return;
-    e.evt.preventDefault();
-
-    const stage = e.target.getStage();
-    const pointer = stage?.getPointerPosition();
-    if (!pointer) return;
-
-    const transform = stage.getAbsoluteTransform().copy().invert();
-    const pos = transform.point(pointer);
-
-    const dx = pos.x - dragStartPos.current.x;
-    const dy = pos.y - dragStartPos.current.y;
-
-    updatePosition(boss.id, nodeStartPos.current.x + dx, nodeStartPos.current.y + dy);
-  }, [boss.id, boss.fixed, updatePosition]);
-
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false;
-  }, []);
 
   return (
     <Group
       x={boss.x}
       y={boss.y}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       onTap={handleMouseDown}
       listening={activeTool === 'select'}
     >

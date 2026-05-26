@@ -13,7 +13,43 @@ export interface PlayerSlice {
   updatePlayerClass: (id: string, className: WoWClass) => void;
   updatePlayerMarker: (id: string, marker: string | undefined) => void;
   updatePlayerRole: (id: string, role: PlayerRole | undefined) => void;
+  bringPlayerToFront: (id: string) => void;
+  sendPlayerToBack: (id: string) => void;
+  movePlayerUp: (id: string) => void;
+  movePlayerDown: (id: string) => void;
   clearPlayers: () => void;
+}
+
+function syncRO_movetoFront(id: string, renderOrder: string[]): string[] {
+  const idx = renderOrder.indexOf(id);
+  if (idx === -1 || idx === renderOrder.length - 1) return renderOrder;
+  const next = [...renderOrder];
+  [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+  return next;
+}
+
+function syncRO_movetoBack(id: string, renderOrder: string[]): string[] {
+  const idx = renderOrder.indexOf(id);
+  if (idx <= 0) return renderOrder;
+  const next = [...renderOrder];
+  [next[idx], next[idx - 1]] = [next[idx - 1], next[idx]];
+  return next;
+}
+
+function syncRO_toEnd(id: string, renderOrder: string[]): string[] {
+  const idx = renderOrder.indexOf(id);
+  if (idx === -1 || idx === renderOrder.length - 1) return renderOrder;
+  const next = renderOrder.filter((rid) => rid !== id);
+  next.push(id);
+  return next;
+}
+
+function syncRO_toStart(id: string, renderOrder: string[]): string[] {
+  const idx = renderOrder.indexOf(id);
+  if (idx <= 0) return renderOrder;
+  const next = renderOrder.filter((rid) => rid !== id);
+  next.unshift(id);
+  return next;
 }
 
 export const createPlayerSlice: StateCreator<import('../index').AppStore, [], [], PlayerSlice> = (set, get) => ({
@@ -22,13 +58,19 @@ export const createPlayerSlice: StateCreator<import('../index').AppStore, [], []
   addPlayer: (name, className, x = 100, y = 100) => {
     captureSnapshot(get);
     const id = nanoid();
-    set((s) => ({ players: [...s.players, { id, name, className, x, y }] }));
+    set((s) => ({
+      players: [...s.players, { id, name, className, x, y }],
+      renderOrder: [...s.renderOrder, id],
+    }));
     return id;
   },
 
   removePlayer: (id) => {
     captureSnapshot(get);
-    set((s) => ({ players: s.players.filter((p) => p.id !== id) }));
+    set((s) => ({
+      players: s.players.filter((p) => p.id !== id),
+      renderOrder: s.renderOrder.filter((rid) => rid !== id),
+    }));
   },
 
   updatePlayerPosition: (id, x, y) => set((s) => ({
@@ -44,7 +86,6 @@ export const createPlayerSlice: StateCreator<import('../index').AppStore, [], []
     return { players: next };
   }),
 
-
   updatePlayerName: (id, name) => set((s) => ({
     players: s.players.map((p) => (p.id === id ? { ...p, name } : p)),
   })),
@@ -53,9 +94,58 @@ export const createPlayerSlice: StateCreator<import('../index').AppStore, [], []
     players: s.players.map((p) => (p.id === id ? { ...p, className } : p)),
   })),
 
+  bringPlayerToFront: (id) => {
+    captureSnapshot(get);
+    set((s) => {
+      const idx = s.players.findIndex((p) => p.id === id);
+      if (idx === -1 || idx === s.players.length - 1) return s;
+      const players = [...s.players];
+      const [item] = players.splice(idx, 1);
+      players.push(item);
+      return { players, renderOrder: syncRO_toEnd(id, s.renderOrder) };
+    });
+  },
+
+  sendPlayerToBack: (id) => {
+    captureSnapshot(get);
+    set((s) => {
+      const idx = s.players.findIndex((p) => p.id === id);
+      if (idx <= 0) return s;
+      const players = [...s.players];
+      const [item] = players.splice(idx, 1);
+      players.unshift(item);
+      return { players, renderOrder: syncRO_toStart(id, s.renderOrder) };
+    });
+  },
+
+  movePlayerUp: (id) => {
+    captureSnapshot(get);
+    set((s) => {
+      const idx = s.players.findIndex((p) => p.id === id);
+      if (idx === -1 || idx >= s.players.length - 1) return s;
+      const players = [...s.players];
+      [players[idx], players[idx + 1]] = [players[idx + 1], players[idx]];
+      return { players, renderOrder: syncRO_movetoFront(id, s.renderOrder) };
+    });
+  },
+
+  movePlayerDown: (id) => {
+    captureSnapshot(get);
+    set((s) => {
+      const idx = s.players.findIndex((p) => p.id === id);
+      if (idx <= 0) return s;
+      const players = [...s.players];
+      [players[idx], players[idx - 1]] = [players[idx - 1], players[idx]];
+      return { players, renderOrder: syncRO_movetoBack(id, s.renderOrder) };
+    });
+  },
+
   clearPlayers: () => {
     captureSnapshot(get);
-    set({ players: [] });
+    set((s) => ({
+      players: [],
+      renderOrder: s.renderOrder.filter((rid) => !s.players.some((p) => p.id === rid)),
+    }));
   },
 
   updatePlayerMarker: (id, marker) => set((s) => ({

@@ -3,6 +3,7 @@ export interface HistorySnapshot {
   bosses: string;
   annotations: string;
   viewport: string;
+  renderOrder: string;
 }
 
 export interface HistoryEntry {

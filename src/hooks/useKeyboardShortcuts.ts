@@ -45,6 +45,7 @@ function restoreSnapshot(snapshot: any) {
     const bossesParsed = JSON.parse(snapshot.bosses);
     const annotations = JSON.parse(snapshot.annotations);
     const viewport = JSON.parse(snapshot.viewport);
+    const renderOrder = JSON.parse(snapshot.renderOrder || '[]');
 
     const currentBosses = store.bosses;
     const bosses = bossesParsed.map((b: any) => ({
@@ -59,6 +60,7 @@ function restoreSnapshot(snapshot: any) {
       bosses,
       annotations,
       viewport,
+      renderOrder,
       selectedIds: [],
     });
   } catch { /* ignore */ }
@@ -96,6 +98,7 @@ function openFile() {
         activeMapId: data.activeMapId ?? null,
         annotations: data.annotations ?? [],
         viewport: data.viewport ?? { x: 0, y: 0, scale: 1 },
+        renderOrder: data.renderOrder ?? [],
         undoStack: [],
         redoStack: [],
         selectedIds: [],
@@ -116,6 +119,7 @@ function deleteSelected(store: any) {
     players: store.players.filter((p: any) => !idSet.has(p.id)),
     bosses: store.bosses.filter((b: any) => !idSet.has(b.id)),
     annotations: store.annotations.filter((a: any) => !idSet.has(a.id)),
+    renderOrder: (store.renderOrder as string[]).filter((rid) => !idSet.has(rid)),
     selectedIds: [],
   });
 }
