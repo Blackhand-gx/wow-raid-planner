@@ -31,7 +31,7 @@ import { FloatingLayerBar } from './FloatingLayerBar';
 import { SelectionLayer } from './SelectionLayer';
 import { ScreenshotLayer } from './ScreenshotLayer';
 import { useDrawAnnotation } from '../../hooks/useDrawAnnotation';
-import type { ToolType, Annotation, CircleAnnotation, RectAnnotation, ArrowAnnotation, LineAnnotation, TextAnnotation, MarkerAnnotation } from '../../types';
+import type { ToolType, CircleAnnotation, RectAnnotation, ArrowAnnotation, LineAnnotation, TextAnnotation, MarkerAnnotation } from '../../types';
 
 interface SelectRect {
   x: number; y: number; width: number; height: number;
