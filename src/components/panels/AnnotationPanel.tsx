@@ -188,6 +188,24 @@ export function AnnotationPanel() {
             </div>
           )}
 
+          {/* Fill toggle — only for circle/rect */}
+          {(selected.type === 'circle' || selected.type === 'rect') && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 10, color: 'var(--color-wow-muted)', minWidth: 32 }}>填充</span>
+              <button
+                onClick={() => updateAnnotation(selected.id, { filled: !(selected as any).filled } as any)}
+                style={{
+                  padding: '3px 12px', border: (selected as any).filled ? '2px solid var(--color-wow-accent)' : '1px solid var(--color-wow-border)',
+                  borderRadius: 4, cursor: 'pointer', fontSize: 11,
+                  background: (selected as any).filled ? 'rgba(199,156,110,0.15)' : 'transparent',
+                  color: (selected as any).filled ? 'var(--color-wow-accent)' : 'var(--color-wow-muted)',
+                }}
+              >
+                {(selected as any).filled ? '◼ 已填充' : '□ 仅边框'}
+              </button>
+            </div>
+          )}
+
           {/* Layer switch */}
           <div style={{ display: 'flex', gap: 4 }}>
             <button

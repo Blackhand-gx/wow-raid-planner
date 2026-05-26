@@ -103,6 +103,9 @@ export function Toolbar() {
   };
 
   const showColorPicker = DRAWING_TOOLS.includes(activeTool);
+  const showFillToggle = activeTool === 'circle' || activeTool === 'rect';
+  const fillEnabled = useAppStore((s) => s.fillEnabled);
+  const setFillEnabled = useAppStore((s) => s.setFillEnabled);
 
   return (
     <div
@@ -162,6 +165,28 @@ export function Toolbar() {
               }}
             />
           ))}
+        </>
+      )}
+
+      {/* Fill toggle — shown when circle or rect tool is active */}
+      {showFillToggle && (
+        <>
+          <div style={{ width: 1, height: 24, background: 'var(--color-wow-border)', margin: '0 4px' }} />
+          <button
+            title={fillEnabled ? '填充中 (点击禁用)' : '填充 (Shift拖拽=正圆/正方)'}
+            onClick={() => setFillEnabled(!fillEnabled)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+              height: 28, padding: '0 10px', border: fillEnabled ? '2px solid var(--color-wow-accent)' : '1px solid var(--color-wow-border)',
+              borderRadius: 4, cursor: 'pointer',
+              background: fillEnabled ? 'rgba(199,156,110,0.15)' : 'transparent',
+              color: fillEnabled ? 'var(--color-wow-accent)' : 'var(--color-wow-muted)',
+              fontSize: 11, whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ fontSize: 14 }}>{fillEnabled ? '◼' : '□'}</span>
+            填充
+          </button>
         </>
       )}
 

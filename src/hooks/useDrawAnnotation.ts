@@ -90,8 +90,11 @@ export function useDrawAnnotation() {
         };
         addAnnotation(a as any);
       } else if (tool === 'circle') {
-        const rx = Math.abs(pos.x - startPos.current.x);
-        const ry = Math.abs(pos.y - startPos.current.y);
+        let rx = Math.abs(pos.x - startPos.current.x);
+        let ry = Math.abs(pos.y - startPos.current.y);
+        const shift = (e.evt as MouseEvent)?.shiftKey;
+        if (shift) { const s = Math.max(rx, ry); rx = s; ry = s; }
+        const filled = useAppStore.getState().fillEnabled;
         const a: Omit<CircleAnnotation, 'id'> = {
           type: 'circle',
           layer: 'back',
@@ -102,10 +105,15 @@ export function useDrawAnnotation() {
           y: (startPos.current.y + pos.y) / 2,
           radiusX: Math.max(rx, 20),
           radiusY: Math.max(ry, 20),
-          filled: false,
+          filled,
         };
         addAnnotation(a as any);
       } else if (tool === 'rect') {
+        let w = dx;
+        let h = dy;
+        const shift = (e.evt as MouseEvent)?.shiftKey;
+        if (shift) { const s = Math.max(w, h); w = s; h = s; }
+        const filled = useAppStore.getState().fillEnabled;
         const a: Omit<RectAnnotation, 'id'> = {
           type: 'rect',
           layer: 'back',
@@ -114,9 +122,9 @@ export function useDrawAnnotation() {
           opacity: 1,
           x: Math.min(startPos.current.x, pos.x),
           y: Math.min(startPos.current.y, pos.y),
-          width: Math.max(dx, 20),
-          height: Math.max(dy, 20),
-          filled: false,
+          width: Math.max(w, 20),
+          height: Math.max(h, 20),
+          filled,
         };
         addAnnotation(a as any);
       }

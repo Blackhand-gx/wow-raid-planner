@@ -31,7 +31,7 @@ import { FloatingLayerBar } from './FloatingLayerBar';
 import { SelectionLayer } from './SelectionLayer';
 import { ScreenshotLayer } from './ScreenshotLayer';
 import { useDrawAnnotation } from '../../hooks/useDrawAnnotation';
-import type { ToolType } from '../../types';
+import type { ToolType, Annotation, CircleAnnotation, RectAnnotation, ArrowAnnotation, LineAnnotation, TextAnnotation, MarkerAnnotation } from '../../types';
 
 interface SelectRect {
   x: number; y: number; width: number; height: number;
@@ -42,6 +42,98 @@ interface DrawingPreview {
   color: string;
   x1: number; y1: number;
   x2: number; y2: number;
+  shiftKey?: boolean;
+}
+
+function findHitAtPos(pos: { x: number; y: number }): string | null {
+  const store = useAppStore.getState();
+  const pad = 6;
+  for (const a of store.annotations) {
+    let hit = false;
+    switch (a.type) {
+      case 'circle': {
+        const ca = a as CircleAnnotation;
+        const dx = pos.x - ca.x;
+        const dy = pos.y - ca.y;
+        const rx = ca.radiusX;
+        const ry = ca.radiusY;
+        if (ca.filled) {
+          const orx = rx + pad;
+          const ory = ry + pad;
+          hit = (dx * dx) / (orx * orx) + (dy * dy) / (ory * ory) <= 1;
+        } else {
+          const sw = (ca.strokeWidth || 2) + pad;
+          const orx = rx + sw;
+          const ory = ry + sw;
+          const irx = Math.max(0, rx - sw);
+          const iry = Math.max(0, ry - sw);
+          const outer = (dx * dx) / (orx * orx) + (dy * dy) / (ory * ory);
+          if (irx <= 0 || iry <= 0) {
+            hit = outer <= 1;
+          } else {
+            const inner = (dx * dx) / (irx * irx) + (dy * dy) / (iry * iry);
+            hit = outer <= 1 && inner >= 1;
+          }
+        }
+        break;
+      }
+      case 'rect': {
+        const ra = a as RectAnnotation;
+        if (ra.filled) {
+          hit = pos.x >= ra.x - pad && pos.x <= ra.x + ra.width + pad
+            && pos.y >= ra.y - pad && pos.y <= ra.y + ra.height + pad;
+        } else {
+          const sw = (ra.strokeWidth || 2) + pad;
+          const insideX = pos.x >= ra.x - sw && pos.x <= ra.x + ra.width + sw;
+          const insideY = pos.y >= ra.y - sw && pos.y <= ra.y + ra.height + sw;
+          const onLeft   = pos.x >= ra.x - sw && pos.x <= ra.x + sw;
+          const onRight  = pos.x >= ra.x + ra.width - sw && pos.x <= ra.x + ra.width + sw;
+          const onTop    = pos.y >= ra.y - sw && pos.y <= ra.y + sw;
+          const onBottom = pos.y >= ra.y + ra.height - sw && pos.y <= ra.y + ra.height + sw;
+          hit = insideY && (onLeft || onRight) || insideX && (onTop || onBottom);
+        }
+        break;
+      }
+      case 'arrow':
+      case 'line': {
+        const la = a as ArrowAnnotation | LineAnnotation;
+        const minX = Math.min(la.points[0], la.points[2]) - pad;
+        const maxX = Math.max(la.points[0], la.points[2]) + pad;
+        const minY = Math.min(la.points[1], la.points[3]) - pad;
+        const maxY = Math.max(la.points[1], la.points[3]) + pad;
+        hit = pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY;
+        break;
+      }
+      case 'text': {
+        const ta = a as TextAnnotation;
+        const fh = ta.fontSize || 16;
+        const tw = ta.text.length * fh * 0.55;
+        hit = pos.x >= ta.x - pad && pos.x <= ta.x + tw + pad
+          && pos.y >= ta.y - pad && pos.y <= ta.y + fh + pad;
+        break;
+      }
+      case 'marker': {
+        const ma = a as MarkerAnnotation;
+        const half = store.markerSize / 2 + pad;
+        hit = Math.abs(pos.x - ma.x) < half && Math.abs(pos.y - ma.y) < half;
+        break;
+      }
+    }
+    if (hit) return a.id;
+  }
+  for (const p of store.players) {
+    const half = store.playerIconSize / 2 + 6;
+    if (Math.abs(p.x - pos.x) < half && Math.abs(p.y - pos.y) < half + 16) {
+      return p.id;
+    }
+  }
+  for (const b of store.bosses) {
+    const r = store.bossIconSize + 6;
+    if (Math.abs(b.x - pos.x) < r && Math.abs(b.y - pos.y) < r + 16) {
+      return b.id;
+    }
+  }
+  return null;
 }
 
 export function RaidCanvas() {
@@ -127,6 +219,9 @@ export function RaidCanvas() {
         const pos = getCanvasPos(stage);
         if (!pos) return;
         const store = useAppStore.getState();
+        if (store.sidebarTab !== 'annotations') {
+          store.setSidebarTab('annotations');
+        }
         store.addAnnotation({
           type: 'marker',
           layer: 'front',
@@ -140,10 +235,26 @@ export function RaidCanvas() {
         return;
       }
 
-      // Drawing tools — only start on empty canvas, not on existing shapes
+      // Drawing tools — auto-switch tab, hit-test existing elements, then draw
       if (['arrow', 'line', 'circle', 'rect', 'text'].includes(activeTool)) {
         const stage = e.target.getStage();
-        if (!stage || e.target !== stage) return;
+        if (!stage) return;
+
+        const store = useAppStore.getState();
+        if (store.sidebarTab !== 'annotations') {
+          store.setSidebarTab('annotations');
+        }
+
+        const pos = getCanvasPos(stage);
+        if (pos) {
+          const hitId = findHitAtPos(pos);
+          if (hitId) {
+            store.setActiveTool('select');
+            store.setSelectedIds([hitId]);
+            return;
+          }
+        }
+
         handleDrawStart(e);
         return;
       }
@@ -182,6 +293,7 @@ export function RaidCanvas() {
           y1: drawStartPos.current.y,
           x2: pos.x,
           y2: pos.y,
+          shiftKey: (e.evt as MouseEvent)?.shiftKey,
         });
       }
     },
@@ -228,7 +340,7 @@ export function RaidCanvas() {
       ref={containerRef}
       data-canvas-root
       style={{
-        width: '100%', height: '100%', overflow: 'hidden', background: '#0a0a14',
+        width: '100%', height: '100%', overflow: 'hidden', background: '#0a0a14', position: 'relative',
         cursor: activeTool === 'eraser' ? 'crosshair' : activeTool === 'pan' ? 'grab' : activeTool === 'marker' ? 'crosshair' : 'default',
       }}
     >
@@ -261,8 +373,9 @@ export function RaidCanvas() {
 }
 
 function DrawingPreviewLayer({ preview }: { preview: DrawingPreview }) {
-  const { type, color, x1, y1, x2, y2 } = preview;
+  const { type, color, x1, y1, x2, y2, shiftKey } = preview;
   const dash = [6, 4];
+  const fillEnabled = useAppStore((s) => s.fillEnabled);
 
   switch (type) {
     case 'arrow':
@@ -297,8 +410,9 @@ function DrawingPreviewLayer({ preview }: { preview: DrawingPreview }) {
         </Layer>
       );
     case 'circle': {
-      const rx = Math.abs(x2 - x1);
-      const ry = Math.abs(y2 - y1);
+      let rx = Math.abs(x2 - x1);
+      let ry = Math.abs(y2 - y1);
+      if (shiftKey) { const s = Math.max(rx, ry); rx = s; ry = s; }
       return (
         <Layer>
           <Ellipse
@@ -310,6 +424,7 @@ function DrawingPreviewLayer({ preview }: { preview: DrawingPreview }) {
             strokeWidth={2}
             opacity={0.5}
             dash={dash}
+            fill={fillEnabled ? color + '33' : undefined}
             listening={false}
             strokeScaleEnabled={false}
           />
@@ -317,21 +432,23 @@ function DrawingPreviewLayer({ preview }: { preview: DrawingPreview }) {
       );
     }
     case 'rect': {
+      let rw = Math.abs(x2 - x1);
+      let rh = Math.abs(y2 - y1);
+      if (shiftKey) { const s = Math.max(rw, rh); rw = s; rh = s; }
       const rx = Math.min(x1, x2);
       const ry = Math.min(y1, y2);
-      const rw = Math.max(Math.abs(x2 - x1), 20);
-      const rh = Math.max(Math.abs(y2 - y1), 20);
       return (
         <Layer>
           <Rect
             x={rx}
             y={ry}
-            width={rw}
-            height={rh}
+            width={Math.max(rw, 20)}
+            height={Math.max(rh, 20)}
             stroke={color}
             strokeWidth={2}
             opacity={0.5}
             dash={dash}
+            fill={fillEnabled ? color + '33' : undefined}
             listening={false}
             strokeScaleEnabled={false}
           />

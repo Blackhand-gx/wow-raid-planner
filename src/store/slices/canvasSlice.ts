@@ -20,6 +20,7 @@ export interface CanvasSlice {
   screenshotOverlay: string | null;
   isImportMode: boolean;
   annotationColor: string;
+  fillEnabled: boolean;
   markerSize: number;
   markerType: string;
   sidebarTab: string;
@@ -42,6 +43,7 @@ export interface CanvasSlice {
   setImportMode: (mode: boolean) => void;
   setSidebarTab: (tab: string) => void;
   setAnnotationColor: (color: string) => void;
+  setFillEnabled: (enabled: boolean) => void;
   setMarkerSize: (size: number) => void;
   setMarkerType: (type: string) => void;
   setStageSize: (w: number, h: number) => void;
@@ -62,6 +64,7 @@ export const createCanvasSlice: StateCreator<CanvasSlice> = (set, get) => ({
   screenshotOverlay: null,
   isImportMode: false,
   annotationColor: '#FF4444',
+  fillEnabled: false,
   markerSize: 24,
   markerType: 'star',
   sidebarTab: 'players',
@@ -108,6 +111,7 @@ export const createCanvasSlice: StateCreator<CanvasSlice> = (set, get) => ({
   setImportMode: (mode: boolean) => set({ isImportMode: mode }),
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setAnnotationColor: (annotationColor) => set({ annotationColor }),
+  setFillEnabled: (fillEnabled) => set({ fillEnabled }),
   setMarkerSize: (markerSize) => set({ markerSize }),
   setMarkerType: (markerType) => set({ markerType }),
 
@@ -127,7 +131,7 @@ export const createCanvasSlice: StateCreator<CanvasSlice> = (set, get) => ({
   }),
 
   moveToRenderPosition: (id, targetIndex) => {
-    captureSnapshot(get);
+    captureSnapshot(get as any);
     set((s) => {
       const idx = s.renderOrder.indexOf(id);
       if (idx === -1 || idx === targetIndex) return s;

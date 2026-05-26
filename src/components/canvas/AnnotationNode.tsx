@@ -5,7 +5,9 @@ import type { Annotation, ArrowAnnotation, LineAnnotation, CircleAnnotation, Rec
 
 export function AnnotationNode({ a }: { a: Annotation }) {
   const setSelectedIds = useAppStore((s) => s.setSelectedIds);
+  const activeTool = useAppStore((s) => s.activeTool);
   const markerSize = useAppStore((s) => s.markerSize);
+  const isSelect = activeTool === 'select';
   const [hovered, setHovered] = useState(false);
   const [markerImg, setMarkerImg] = useState<HTMLImageElement | null>(null);
 
@@ -22,6 +24,7 @@ export function AnnotationNode({ a }: { a: Annotation }) {
       store.removeAnnotation(a.id);
       return;
     }
+    if (store.activeTool !== 'select') return;
     if (e.evt.shiftKey) {
       const current = store.selectedIds;
       setSelectedIds(current.includes(a.id) ? current.filter((id) => id !== a.id) : [...current, a.id]);
@@ -30,7 +33,18 @@ export function AnnotationNode({ a }: { a: Annotation }) {
     }
   };
 
-  const eraser = useAppStore((s) => s.activeTool) === 'eraser';
+  const handleDragStart = () => {
+    const s = useAppStore.getState();
+    s.pushSnapshot({
+      players: JSON.stringify(s.players),
+      bosses: JSON.stringify(s.bosses),
+      annotations: JSON.stringify(s.annotations),
+      viewport: JSON.stringify(s.viewport),
+      renderOrder: JSON.stringify(s.renderOrder),
+    });
+  };
+
+  const eraser = activeTool === 'eraser';
   const glowColor = hovered ? (eraser ? '#ff4444' : a.color) : undefined;
   const glowBlur = hovered ? 10 : 0;
   const hoverStrokeW = hovered ? 1.5 : 1;
@@ -60,7 +74,16 @@ export function AnnotationNode({ a }: { a: Annotation }) {
           opacity={hovered ? 1 : aa.opacity}
           pointerLength={aa.headSize}
           pointerWidth={aa.headSize * 0.6}
-          draggable
+          draggable={isSelect}
+          onDragStart={handleDragStart}
+          onDragEnd={(e: any) => {
+            const n = e.target; const dx = n.x(); const dy = n.y();
+            const pts = aa.points;
+            useAppStore.getState().updateAnnotation(a.id, {
+              points: [pts[0] + dx, pts[1] + dy, pts[2] + dx, pts[3] + dy],
+            } as any);
+            n.x(0); n.y(0);
+          }}
           onClick={handleClick}
           onTap={handleClick}
           strokeScaleEnabled={false}
@@ -79,7 +102,16 @@ export function AnnotationNode({ a }: { a: Annotation }) {
           strokeWidth={la.strokeWidth * hoverStrokeW}
           opacity={hovered ? 1 : la.opacity}
           dash={la.dash.length > 0 ? la.dash : undefined}
-          draggable
+          draggable={isSelect}
+          onDragStart={handleDragStart}
+          onDragEnd={(e: any) => {
+            const n = e.target; const dx = n.x(); const dy = n.y();
+            const pts = la.points;
+            useAppStore.getState().updateAnnotation(a.id, {
+              points: [pts[0] + dx, pts[1] + dy, pts[2] + dx, pts[3] + dy],
+            } as any);
+            n.x(0); n.y(0);
+          }}
           onClick={handleClick}
           onTap={handleClick}
           strokeScaleEnabled={false}
@@ -101,7 +133,13 @@ export function AnnotationNode({ a }: { a: Annotation }) {
           strokeWidth={ca.strokeWidth * hoverStrokeW}
           opacity={hovered ? 1 : ca.opacity}
           fill={ca.filled ? ca.color + '33' : undefined}
-          draggable
+          draggable={isSelect}
+          onDragStart={handleDragStart}
+          onDragEnd={(e: any) => {
+            useAppStore.getState().updateAnnotation(a.id, {
+              x: e.target.x(), y: e.target.y(),
+            } as any);
+          }}
           onClick={handleClick}
           onTap={handleClick}
           strokeScaleEnabled={false}
@@ -123,7 +161,13 @@ export function AnnotationNode({ a }: { a: Annotation }) {
           strokeWidth={ra.strokeWidth * hoverStrokeW}
           opacity={hovered ? 1 : ra.opacity}
           fill={ra.filled ? ra.color + '33' : undefined}
-          draggable
+          draggable={isSelect}
+          onDragStart={handleDragStart}
+          onDragEnd={(e: any) => {
+            useAppStore.getState().updateAnnotation(a.id, {
+              x: e.target.x(), y: e.target.y(),
+            } as any);
+          }}
           onClick={handleClick}
           onTap={handleClick}
           strokeScaleEnabled={false}
@@ -143,7 +187,13 @@ export function AnnotationNode({ a }: { a: Annotation }) {
           fontSize={ta.fontSize}
           fill={ta.color}
           opacity={hovered ? 1 : ta.opacity}
-          draggable
+          draggable={isSelect}
+          onDragStart={handleDragStart}
+          onDragEnd={(e: any) => {
+            useAppStore.getState().updateAnnotation(a.id, {
+              x: e.target.x(), y: e.target.y(),
+            } as any);
+          }}
           onClick={handleClick}
           onTap={handleClick}
           strokeScaleEnabled={false}
@@ -164,7 +214,13 @@ export function AnnotationNode({ a }: { a: Annotation }) {
           y={ma.y - half}
           width={markerSize}
           height={markerSize}
-          draggable
+          draggable={isSelect}
+          onDragStart={handleDragStart}
+          onDragEnd={(e: any) => {
+            useAppStore.getState().updateAnnotation(a.id, {
+              x: e.target.x() + half, y: e.target.y() + half,
+            } as any);
+          }}
           onClick={handleClick}
           onTap={handleClick}
           {...hoverBaseProps}

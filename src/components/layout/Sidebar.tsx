@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Users, Skull, Map, Pencil } from 'lucide-react';
 import { MapPanel } from '../panels/MapPanel';
 import { PlayerPanel } from '../panels/PlayerPanel';
@@ -16,12 +15,8 @@ const tabs: { id: TabId; icon: typeof Users; label: string }[] = [
 ];
 
 export function Sidebar() {
-  const [activeTab, setActiveTab] = useState<TabId>('players');
+  const sidebarTab = useAppStore((s) => s.sidebarTab);
   const setSidebarTab = useAppStore((s) => s.setSidebarTab);
-
-  useEffect(() => {
-    setSidebarTab(activeTab);
-  }, [activeTab, setSidebarTab]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -34,11 +29,11 @@ export function Sidebar() {
       >
         {tabs.map((t) => {
           const Icon = t.icon;
-          const active = activeTab === t.id;
+          const active = sidebarTab === t.id;
           return (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id)}
+              onClick={() => setSidebarTab(t.id)}
               title={t.label}
               style={{
                 flex: 1,
@@ -64,10 +59,10 @@ export function Sidebar() {
 
       {/* Panel content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        {activeTab === 'players' && <PlayerPanel />}
-        {activeTab === 'bosses' && <BossPanel />}
-        {activeTab === 'maps' && <MapPanel />}
-        {activeTab === 'annotations' && <AnnotationPanel />}
+        {sidebarTab === 'players' && <PlayerPanel />}
+        {sidebarTab === 'bosses' && <BossPanel />}
+        {sidebarTab === 'maps' && <MapPanel />}
+        {sidebarTab === 'annotations' && <AnnotationPanel />}
       </div>
     </div>
   );

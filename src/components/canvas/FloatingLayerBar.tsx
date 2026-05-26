@@ -19,7 +19,7 @@ function getLayerColor(index: number, total: number): string {
 
 const TRACK_WIDTH = 4;
 const THUMB_DIAMETER = 10;
-const TRACK_MIN_H = 40;
+const TRACK_HEIGHT = 80;
 const GAP_PX = 12;
 const CONTAINER_WIDTH = 20;
 
@@ -33,6 +33,8 @@ export function FloatingLayerBar() {
   const playerIconSize = useAppStore((s) => s.playerIconSize);
   const bossIconSize = useAppStore((s) => s.bossIconSize);
   const markerSize = useAppStore((s) => s.markerSize);
+  const stageWidth = useAppStore((s) => s.stageWidth);
+  const stageHeight = useAppStore((s) => s.stageHeight);
 
   const isDragging = useRef(false);
   const dragStartRef = useRef({ clientY: 0, naturalRatio: 0, trackHeightPx: 0, total: 0, currentIdx: 0 });
@@ -47,22 +49,23 @@ export function FloatingLayerBar() {
   const total = renderOrder.length;
   if (roIdx === -1) return null;
 
-  let elX = 0;
-  let elY = 0;
-  let visualHalfH = 20;
+  let elCenterX = 0;
+  let elCenterY = 0;
+  let marginLeft = 14;
 
   const player = players.find((p) => p.id === id);
   if (player) {
-    elX = player.x;
-    elY = player.y;
-    visualHalfH = playerIconSize / 2 + 6;
+    elCenterX = player.x;
+    elCenterY = player.y;
+    const iconR = playerIconSize / 2 + 4;
+    marginLeft = iconR;
   }
 
   const boss = bosses.find((b) => b.id === id);
   if (boss) {
-    elX = boss.x;
-    elY = boss.y;
-    visualHalfH = bossIconSize + 6;
+    elCenterX = boss.x;
+    elCenterY = boss.y;
+    marginLeft = bossIconSize + 4;
   }
 
   const annotation = annotations.find((a) => a.id === id);
@@ -71,37 +74,38 @@ export function FloatingLayerBar() {
       case 'arrow':
       case 'line': {
         const pts = (annotation as ArrowAnnotation | LineAnnotation).points;
-        elX = (pts[0] + pts[2]) / 2;
-        elY = (pts[1] + pts[3]) / 2;
-        visualHalfH = 18;
+        elCenterX = (pts[0] + pts[2]) / 2;
+        elCenterY = (pts[1] + pts[3]) / 2;
+        marginLeft = 18;
         break;
       }
       case 'circle': {
         const ca = annotation as CircleAnnotation;
-        elX = ca.x;
-        elY = ca.y;
-        visualHalfH = Math.max(ca.radiusX, ca.radiusY) + ca.strokeWidth + 4;
+        elCenterX = ca.x;
+        elCenterY = ca.y;
+        marginLeft = ca.radiusX + ca.strokeWidth + 4;
         break;
       }
       case 'rect': {
         const ra = annotation as RectAnnotation;
-        elX = ra.x + ra.width / 2;
-        elY = ra.y + ra.height / 2;
-        visualHalfH = Math.max(ra.height / 2, 14) + ra.strokeWidth + 4;
+        elCenterX = ra.x + ra.width / 2;
+        elCenterY = ra.y + ra.height / 2;
+        marginLeft = ra.width / 2 + ra.strokeWidth + 4;
         break;
       }
       case 'text': {
         const ta = annotation as TextAnnotation;
-        elX = ta.x;
-        elY = ta.y;
-        visualHalfH = (ta.fontSize || 16) / 2 + 6;
+        const fh = ta.fontSize || 16;
+        elCenterX = ta.x + (ta.text.length * fh * 0.55) / 2;
+        elCenterY = ta.y + fh / 2;
+        marginLeft = (ta.text.length * fh * 0.55) / 2 + 4;
         break;
       }
       case 'marker': {
         const ma = annotation as MarkerAnnotation;
-        elX = ma.x;
-        elY = ma.y;
-        visualHalfH = markerSize / 2 + 6;
+        elCenterX = ma.x;
+        elCenterY = ma.y;
+        marginLeft = markerSize / 2 + 4;
         break;
       }
     }
@@ -109,17 +113,25 @@ export function FloatingLayerBar() {
 
   if (!player && !boss && !annotation) return null;
 
-  const screenX = elX * viewport.scale + viewport.x;
-  const screenY = elY * viewport.scale + viewport.y;
-  const screenVisualHalfH = visualHalfH * viewport.scale;
-  const trackHeight = Math.max(screenVisualHalfH * 2, TRACK_MIN_H);
-  const elementLeftScreen = screenX - screenVisualHalfH;
-  const containerLeft = elementLeftScreen - GAP_PX - CONTAINER_WIDTH;
-  const containerTop = screenY - trackHeight / 2;
+  const elScreenX = elCenterX * viewport.scale + viewport.x;
+  const elScreenY = elCenterY * viewport.scale + viewport.y;
+
+  // Try left side first; flip to right if too close to left edge
+  const elementVisualLeft = elScreenX - marginLeft * viewport.scale;
+  let barLeft = elementVisualLeft - GAP_PX - CONTAINER_WIDTH;
+  if (barLeft < 4) {
+    // Place on the right side of the element instead
+    const elementVisualRight = elScreenX + marginLeft * viewport.scale;
+    barLeft = elementVisualRight + GAP_PX;
+  }
+
+  // Clamp to container bounds so the bar stays visible
+  barLeft = Math.max(0, Math.min(barLeft, stageWidth - CONTAINER_WIDTH - 8));
+  const barTop = Math.max(4, Math.min(elScreenY - TRACK_HEIGHT / 2, stageHeight - TRACK_HEIGHT - 22));
 
   const naturalRatio = total <= 1 ? 1 : roIdx / (total - 1);
-  const thumbTopPx = (1 - naturalRatio) * trackHeight;
-  const fillHeightPx = naturalRatio * trackHeight;
+  const thumbTopPx = (1 - naturalRatio) * TRACK_HEIGHT;
+  const fillHeightPx = naturalRatio * TRACK_HEIGHT;
   const layerColor = getLayerColor(roIdx, total);
 
   const onTrackClick = (e: React.MouseEvent) => {
@@ -209,10 +221,10 @@ export function FloatingLayerBar() {
     <div
       style={{
         position: 'absolute',
-        left: containerLeft,
-        top: containerTop,
+        left: barLeft,
+        top: barTop,
         width: CONTAINER_WIDTH,
-        height: trackHeight + 18,
+        height: TRACK_HEIGHT + 18,
         zIndex: 50,
         pointerEvents: 'auto',
       }}
@@ -225,7 +237,7 @@ export function FloatingLayerBar() {
           left: (CONTAINER_WIDTH - TRACK_WIDTH) / 2,
           top: 0,
           width: TRACK_WIDTH,
-          height: trackHeight,
+          height: TRACK_HEIGHT,
           borderRadius: TRACK_WIDTH / 2,
           background: 'rgba(255, 255, 255, 0.06)',
           border: '1px solid rgba(199, 156, 110, 0.2)',
@@ -269,7 +281,7 @@ export function FloatingLayerBar() {
       <div
         style={{
           position: 'absolute',
-          top: trackHeight + 4,
+          top: TRACK_HEIGHT + 4,
           left: 0,
           width: CONTAINER_WIDTH,
           textAlign: 'center',
