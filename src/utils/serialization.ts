@@ -8,8 +8,16 @@ export function serializeState(store: AppStore): string {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     players: s.players ?? [],
-    bosses: s.bosses?.map((b: any) => ({ ...b, imageDataUrl: b.imageDataUrl ? '[IMG_REF]' : null })) ?? [],
-    maps: s.maps ?? [],
+    // 剥离 base64 imageDataUrl（减小文件体积），保留 iconPath 用于恢复时重新加载
+    bosses: s.bosses?.map((b: any) => ({
+      ...b,
+      imageDataUrl: b.iconPath ? null : (b.imageDataUrl ? '[IMG_REF]' : null),
+    })) ?? [],
+    // 剥离 base64 imageDataUrl（减小文件体积），保留 mapPath 用于恢复时重新加载
+    maps: s.maps?.map((m: any) => ({
+      ...m,
+      imageDataUrl: m.mapPath ? '' : (m.imageDataUrl || ''),
+    })) ?? [],
     activeMapId: s.activeMapId ?? null,
     annotations: s.annotations ?? [],
     viewport: s.viewport ?? { x: 0, y: 0, scale: 1 },
@@ -48,7 +56,15 @@ export function takeSnapshot(store: AppStore): string {
   const s = store as any;
   return JSON.stringify({
     players: s.players ?? [],
-    bosses: s.bosses?.map((b: any) => ({ ...b, imageDataUrl: b.imageDataUrl ? '[IMG_REF]' : null })) ?? [],
+    bosses: s.bosses?.map((b: any) => ({
+      ...b,
+      imageDataUrl: b.iconPath ? null : (b.imageDataUrl ? '[IMG_REF]' : null),
+    })) ?? [],
+    // 剥离 base64 imageDataUrl，保留 mapPath 用于恢复
+    maps: s.maps?.map((m: any) => ({
+      ...m,
+      imageDataUrl: m.mapPath ? '' : (m.imageDataUrl || ''),
+    })) ?? [],
     annotations: s.annotations ?? [],
     viewport: s.viewport ?? { x: 0, y: 0, scale: 1 },
     renderOrder: s.renderOrder ?? [],

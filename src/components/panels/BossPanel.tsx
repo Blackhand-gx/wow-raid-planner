@@ -75,14 +75,15 @@ export function BossPanel() {
     const total = bossNames.length;
     bossNames.forEach((name, i) => {
       const offsetX = total > 1 ? (i - (total - 1) / 2) * 50 : 0;
-      addBoss(name, iconDataUrls[i] ?? null, cx + offsetX, cy);
+      const iconPath = defaultIconPaths?.[i];
+      addBoss(name, iconDataUrls[i] ?? null, cx + offsetX, cy, iconPath);
     });
 
     // Load default map if provided
     if (defaultMapPath) {
       try {
         const { dataUrl, width, height } = await loadDefaultMap(defaultMapPath);
-        const mapId = addMap(raidName, dataUrl, width, height);
+        const mapId = addMap(raidName, dataUrl, width, height, defaultMapPath);
         updateMapLock(mapId, true);
         setActiveMap(mapId);
         const { stageWidth: sw, stageHeight: sh } = useAppStore.getState();

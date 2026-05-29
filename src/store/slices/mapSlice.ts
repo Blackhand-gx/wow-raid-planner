@@ -6,7 +6,7 @@ import { captureSnapshot } from '../captureSnapshot';
 export interface MapSlice {
   maps: MapData[];
   activeMapId: string | null;
-  addMap: (name: string, imageDataUrl: string, w: number, h: number) => string;
+  addMap: (name: string, imageDataUrl: string, w: number, h: number, mapPath?: string) => string;
   removeMap: (id: string) => void;
   setActiveMap: (id: string) => void;
   updateMapName: (id: string, name: string) => void;
@@ -22,13 +22,15 @@ export const createMapSlice: StateCreator<import('../index').AppStore, [], [], M
   maps: [],
   activeMapId: null,
 
-  addMap: (name, imageDataUrl, originalWidth, originalHeight) => {
+  addMap: (name, imageDataUrl, originalWidth, originalHeight, mapPath = undefined) => {
     captureSnapshot(get);
     const id = nanoid();
     const { stageWidth, stageHeight } = get();
     const fitScale = Math.min(stageWidth / originalWidth, stageHeight / originalHeight);
+    const map: MapData = { id, name, imageDataUrl, originalWidth, originalHeight, opacity: 0.85, mapScale: fitScale, offsetX: 0, offsetY: 0, locked: false };
+    if (mapPath) map.mapPath = mapPath;
     set((s) => ({
-      maps: [...s.maps, { id, name, imageDataUrl, originalWidth, originalHeight, opacity: 0.85, mapScale: fitScale, offsetX: 0, offsetY: 0, locked: false }],
+      maps: [...s.maps, map],
     }));
     if (!get().activeMapId) {
       set({ activeMapId: id });

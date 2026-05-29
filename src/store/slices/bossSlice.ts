@@ -6,7 +6,7 @@ import { captureSnapshot } from '../captureSnapshot';
 
 export interface BossSlice {
   bosses: Boss[];
-  addBoss: (name: string, imageDataUrl?: string | null, x?: number, y?: number) => string;
+  addBoss: (name: string, imageDataUrl?: string | null, x?: number, y?: number, iconPath?: string) => string;
   removeBoss: (id: string) => void;
   updateBossPosition: (id: string, x: number, y: number) => void;
   updateBossName: (id: string, name: string) => void;
@@ -54,11 +54,13 @@ function roToStart(id: string, renderOrder: string[]): string[] {
 export const createBossSlice: StateCreator<import('../index').AppStore, [], [], BossSlice> = (set, get) => ({
   bosses: [],
 
-  addBoss: (name, imageDataUrl = null, x = 400, y = 200) => {
+  addBoss: (name, imageDataUrl = null, x = 400, y = 200, iconPath = undefined) => {
     captureSnapshot(get);
     const id = nanoid();
+    const boss: Boss = { id, name, imageDataUrl, x, y, radius: BOSS_ICON_RADIUS, fixed: false };
+    if (iconPath) boss.iconPath = iconPath;
     set((s) => ({
-      bosses: [...s.bosses, { id, name, imageDataUrl, x, y, radius: BOSS_ICON_RADIUS, fixed: false }],
+      bosses: [...s.bosses, boss],
       renderOrder: [...s.renderOrder, id],
     }));
     return id;

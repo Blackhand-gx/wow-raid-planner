@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppStore } from '../store';
 import { serializeState, deserializeState } from '../utils/serialization';
+import { restoreBossImages, restoreMapImages } from '../utils/restoreImages';
 
 export function useKeyboardShortcuts() {
   useEffect(() => {
@@ -91,10 +92,20 @@ function openFile() {
         alert('文件格式不正确');
         return;
       }
+      // 先同步设置状态（图片可能为空，稍后异步恢复）
+      const bosses = (data.bosses ?? []).map((b: any) => ({
+        ...b,
+        imageDataUrl: b.imageDataUrl === '[IMG_REF]' ? null : (b.imageDataUrl || null),
+      }));
+      const maps = (data.maps ?? []).map((m: any) => ({
+        ...m,
+        imageDataUrl: m.imageDataUrl || '',
+      }));
+
       (useAppStore as any).setState({
         players: data.players ?? [],
-        bosses: data.bosses ?? [],
-        maps: data.maps ?? [],
+        bosses,
+        maps,
         activeMapId: data.activeMapId ?? null,
         annotations: data.annotations ?? [],
         viewport: data.viewport ?? { x: 0, y: 0, scale: 1 },
@@ -102,6 +113,16 @@ function openFile() {
         undoStack: [],
         redoStack: [],
         selectedIds: [],
+      });
+
+      // 异步从预设路径恢复图片
+      const [restoredBosses, restoredMaps] = await Promise.all([
+        restoreBossImages(bosses),
+        restoreMapImages(maps),
+      ]);
+      (useAppStore as any).setState({
+        bosses: restoredBosses,
+        maps: restoredMaps,
       });
     } catch {
       alert('文件加载失败');

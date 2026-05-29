@@ -2,7 +2,7 @@ export const DEFAULT_VIEWPORT = { x: 0, y: 0, scale: 1 };
 
 export const MIN_SCALE = 0.1;
 export const MAX_SCALE = 5.0;
-export const ZOOM_SPEED = 0.001;
+export const ZOOM_SPEED = 0.02;
 export const PAN_SPEED = 1.5;
 
 export const PLAYER_ICON_RADIUS = 22;
